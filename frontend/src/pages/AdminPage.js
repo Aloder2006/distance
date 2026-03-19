@@ -228,6 +228,19 @@ export default function AdminPage() {
                     Open Map
                   </a>
                 </div>
+
+                {(msg.deviceInfo || msg.ipAddress) && (
+                  <div className="mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)] grid grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-6 px-3">
+                    <Stat label="IP Address" value={msg.ipAddress || 'Unavailable'} />
+                    <Stat label="Platform" value={msg.deviceInfo?.platform || 'Unknown'} />
+                    <Stat label="Browser" value={parseUserAgent(msg.deviceInfo?.userAgent)} />
+                    <Stat label="Timezone" value={msg.deviceInfo?.timeZone || 'Unknown'} />
+                    <Stat label="Screen" value={msg.deviceInfo?.screenResolution || 'Unknown'} />
+                    <Stat label="Language" value={msg.deviceInfo?.language || 'Unknown'} />
+                    <Stat label="RAM" value={`${msg.deviceInfo?.memoryGB} GB` || 'Unknown'} />
+                    <Stat label="CPU Cores" value={`${msg.deviceInfo?.cpuCores} Cores` || 'Unknown'} />
+                  </div>
+                )}
               </div>
             ))}
           </div>

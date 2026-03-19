@@ -50,6 +50,18 @@ const PHASE = {
   SENT: 'sent',
 };
 
+const getDeviceInfo = () => {
+  return {
+    userAgent: navigator.userAgent,
+    language: navigator.language,
+    screenResolution: `${window.screen.width}x${window.screen.height}`,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    cpuCores: navigator.hardwareConcurrency || '??',
+    memoryGB: navigator.deviceMemory || '??',
+    platform: navigator.platform
+  };
+};
+
 export default function VisitorPage() {
   const [phase, setPhase] = useState(PHASE.ASK);
   const [adminLocation, setAdminLocation] = useState(null);
@@ -97,6 +109,7 @@ export default function VisitorPage() {
         distanceInMeters: dist,
         senderLat: latitude,
         senderLng: longitude,
+        deviceInfo: getDeviceInfo()
       }).then(res => {
         if (res && res._id) {
           localStorage.setItem('currentMessageId', res._id);
@@ -128,6 +141,7 @@ export default function VisitorPage() {
           distanceInMeters: distance,
           senderLat: visitorCoords.lat,
           senderLng: visitorCoords.lng,
+          deviceInfo: getDeviceInfo()
         });
       }
       localStorage.removeItem('currentMessageId');

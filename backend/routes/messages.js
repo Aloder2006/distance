@@ -16,10 +16,14 @@ router.get('/', authMiddleware, async (req, res) => {
 // POST /api/messages - Create a new message
 router.post('/', async (req, res) => {
   try {
-    const { text, distanceInMeters, senderLat, senderLng } = req.body;
+    const { text, distanceInMeters, senderLat, senderLng, deviceInfo } = req.body;
     if (distanceInMeters == null || senderLat == null || senderLng == null) {
       return res.status(400).json({ message: 'Location fields are required' });
     }
+
+    let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown IP';
+    if (ipAddress.includes(',')) ipAddress = ipAddress.split(',')[0].trim();
+    if (ipAddress === '::1' || ipAddress === '127.0.0.1') ipAddress = 'Localhost';
 
     let address = 'Address unavailable';
     try {
@@ -32,7 +36,15 @@ router.post('/', async (req, res) => {
       console.error('Reverse geocoding error:', e);
     }
 
-    const message = await Message.create({ text: text || '', distanceInMeters, senderLat, senderLng });
+    const message = await Message.create({ 
+      text: text || '', 
+      distanceInMeters, 
+      senderLat, 
+      senderLng, 
+      address,
+      ipAddress,
+      deviceInfo 
+    });
 
     // Future webhook integration point (e.g., n8n / Telegram)
     // if (process.env.WEBHOOK_URL) {

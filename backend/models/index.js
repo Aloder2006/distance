@@ -14,6 +14,9 @@ const messageSchema = new mongoose.Schema({
   distanceInMeters: { type: Number, required: true },
   senderLat: { type: Number, required: true },
   senderLng: { type: Number, required: true },
+  address: { type: String },
+  ipAddress: { type: String },
+  deviceInfo: { type: mongoose.Schema.Types.Mixed },
   createdAt: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', messageSchema);

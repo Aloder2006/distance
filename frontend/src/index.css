@@ -93,10 +93,9 @@ h1, h2, h3, .font-serif {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Leaflet styling for dark wood theme */
+/* Leaflet styling for dark theme */
 .leaflet-tile {
-  /* Using deeply saturated sepia to give OSM a dark wooden vibe while keeping labels readable */
-  filter: sepia(0.75) hue-rotate(330deg) saturate(1.8) brightness(0.45) contrast(1.4);
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 
 .leaflet-container {
