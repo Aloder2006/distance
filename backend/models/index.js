@@ -10,7 +10,7 @@ const Location = mongoose.model('Location', locationSchema);
 
 // Message model
 const messageSchema = new mongoose.Schema({
-  text: { type: String, required: true },
+  text: { type: String, default: '' },
   distanceInMeters: { type: Number, required: true },
   senderLat: { type: Number, required: true },
   senderLng: { type: Number, required: true },

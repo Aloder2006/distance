@@ -7,6 +7,7 @@ require('dotenv').config();
 const locationRoutes = require('./routes/location');
 const messageRoutes = require('./routes/messages');
 const visitorRoutes = require('./routes/visitors');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/visitors', visitorRoutes);

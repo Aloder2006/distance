@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Location } = require('../models');
+const authMiddleware = require('../middleware/auth');
 
 // GET /api/location - Get admin location
 router.get('/', async (req, res) => {
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/location - Update admin location (always overwrite single document)
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { adminLat, adminLng } = req.body;
     if (adminLat == null || adminLng == null) {

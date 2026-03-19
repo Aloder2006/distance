@@ -15,7 +15,7 @@ export function getDistanceInMeters(lat1, lng1, lat2, lng2) {
 
 export function formatDistance(meters) {
   if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(1)} كيلومتر`;
+    return `${(meters / 1000).toFixed(1)} km`;
   }
-  return `${meters.toLocaleString('ar-EG')} متر`;
+  return `${meters.toLocaleString('en-US')} m`;
 }
