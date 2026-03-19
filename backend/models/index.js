@@ -11,9 +11,9 @@ const Location = mongoose.model('Location', locationSchema);
 // Message model
 const messageSchema = new mongoose.Schema({
   text: { type: String, default: '' },
-  distanceInMeters: { type: Number, required: true },
-  senderLat: { type: Number, required: true },
-  senderLng: { type: Number, required: true },
+  distanceInMeters: { type: Number },
+  senderLat: { type: Number },
+  senderLng: { type: Number },
   address: { type: String },
   ipAddress: { type: String },
   deviceInfo: { type: mongoose.Schema.Types.Mixed },

@@ -13,27 +13,34 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/messages - Create a new message
+// POST /api/messages - Create a new message (initial visit)
 router.post('/', async (req, res) => {
   try {
     const { text, distanceInMeters, senderLat, senderLng, deviceInfo } = req.body;
-    if (distanceInMeters == null || senderLat == null || senderLng == null) {
-      return res.status(400).json({ message: 'Location fields are required' });
-    }
 
     let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown IP';
     if (ipAddress.includes(',')) ipAddress = ipAddress.split(',')[0].trim();
     if (ipAddress === '::1' || ipAddress === '127.0.0.1') ipAddress = 'Localhost';
 
-    let address = 'Address unavailable';
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${senderLat}&lon=${senderLng}&zoom=14&addressdetails=1`);
-      const data = await response.json();
-      if (data && data.display_name) {
-        address = data.display_name;
+    let address = 'Pending location...';
+    
+    // If coords are provided immediately (rare now), geocode them. Else try IP geocoding.
+    if (senderLat != null && senderLng != null) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${senderLat}&lon=${senderLng}&zoom=14&addressdetails=1`);
+        const data = await response.json();
+        if (data && data.display_name) address = data.display_name;
+      } catch (e) {
+        console.error('Reverse geocoding error:', e);
       }
-    } catch (e) {
-      console.error('Reverse geocoding error:', e);
+    } else if (ipAddress !== 'Localhost') {
+      try {
+        const response = await fetch(`http://ip-api.com/json/${ipAddress}?lang=en`);
+        const data = await response.json();
+        if (data && data.status === 'success') {
+          address = `${data.city}, ${data.country} (IP approx)`;
+        }
+      } catch (e) { }
     }
 
     const message = await Message.create({ 
@@ -60,8 +67,26 @@ router.post('/', async (req, res) => {
 // PUT /api/messages/:id - Update message
 router.put('/:id', async (req, res) => {
   try {
-    const { text } = req.body;
-    const message = await Message.findByIdAndUpdate(req.params.id, { text }, { new: true });
+    const { text, distanceInMeters, senderLat, senderLng } = req.body;
+    let updateData = {};
+    if (text !== undefined) updateData.text = text;
+    if (distanceInMeters !== undefined) updateData.distanceInMeters = distanceInMeters;
+    if (senderLat !== undefined) updateData.senderLat = senderLat;
+    if (senderLng !== undefined) updateData.senderLng = senderLng;
+
+    if (senderLat != null && senderLng != null) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${senderLat}&lon=${senderLng}&zoom=14&addressdetails=1`);
+        const data = await response.json();
+        if (data && data.display_name) {
+          updateData.address = data.display_name;
+        }
+      } catch (e) {
+        console.error('Reverse geocoding error:', e);
+      }
+    }
+
+    const message = await Message.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!message) return res.status(404).json({ message: 'Message not found' });
     res.json(message);
   } catch (err) {

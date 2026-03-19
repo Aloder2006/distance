@@ -5,7 +5,6 @@ import { formatDistance } from '../utils/distance';
 const TABS = {
   LOCATION: 'location',
   MESSAGES: 'messages',
-  VISITORS: 'visitors',
 };
 
 export default function AdminPage() {
@@ -31,9 +30,6 @@ export default function AdminPage() {
     if (!token) return;
     if (tab === TABS.MESSAGES) {
       api.getMessages().then(setMessages).catch(handleApiError);
-    }
-    if (tab === TABS.VISITORS) {
-      api.getVisitors().then(setVisitors).catch(handleApiError);
     }
   }, [tab, token]);
 
@@ -137,11 +133,15 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
+        <div className="mb-4">
+          <p className="text-sm font-medium tracking-wide text-[#e5d3c8]">
+            Total Visits: <span className="font-bold text-[#fdf8f5] ml-1">{messages.length}</span>
+          </p>
+        </div>
         <div className="flex gap-2 glass-panel p-1.5 mb-8 rounded-xl">
           {[
             { key: TABS.LOCATION, label: 'Location' },
-            { key: TABS.MESSAGES, label: 'Messages' },
-            { key: TABS.VISITORS, label: 'Visitors' },
+            { key: TABS.MESSAGES, label: 'Messages & Visitors' },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -215,18 +215,20 @@ export default function AdminPage() {
                 
                 <div className="flex items-center justify-between flex-wrap gap-4 px-3">
                   <div className="flex gap-6">
-                    <Stat label="Distance" value={formatDistance(msg.distanceInMeters)} />
+                    <Stat label="Distance" value={msg.distanceInMeters != null ? formatDistance(msg.distanceInMeters) : 'Not Allowed'} />
                     <Stat label="Date" value={new Date(msg.createdAt).toLocaleDateString('en-US')} />
-                    <Stat label="Address" value={msg.address || 'Unavailable'} />
+                    <Stat label="Location" value={msg.address || 'Unknown'} />
                   </div>
-                  <a
-                    href={`http://maps.google.com/?q=${msg.senderLat},${msg.senderLng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-medium tracking-wide uppercase glass-button-secondary px-3 py-1.5 rounded-lg"
-                  >
-                    Open Map
-                  </a>
+                  {msg.senderLat != null && msg.senderLng != null && (
+                    <a
+                      href={`http://maps.google.com/?q=${msg.senderLat},${msg.senderLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium tracking-wide uppercase glass-button-secondary px-3 py-1.5 rounded-lg"
+                    >
+                      Open Map
+                    </a>
+                  )}
                 </div>
 
                 {(msg.deviceInfo || msg.ipAddress) && (
@@ -243,38 +245,6 @@ export default function AdminPage() {
                 )}
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Tab: Visitors */}
-        {tab === TABS.VISITORS && (
-          <div className="animate-fadeInUp">
-            {visitors.length === 0 && <EmptyState text="No visitors yet" />}
-            {visitors.length > 0 && (
-              <div className="glass-panel rounded-3xl overflow-hidden">
-                <div className="px-6 py-5 border-b border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.1)]">
-                  <p className="text-sm font-medium tracking-wide text-[#e5d3c8]">
-                    Total Visits: <span className="font-bold text-[#fdf8f5] ml-1">{visitors.length}</span>
-                  </p>
-                </div>
-                <div className="divide-y divide-[rgba(255,255,255,0.05)]">
-                  {visitors.map((v) => (
-                    <div key={v._id} className="px-6 py-4 hover:bg-[rgba(255,255,255,0.02)] transition-colors">
-                      <p className="text-sm font-medium text-[#fdf8f5] mb-1.5">
-                        {v.address ? v.address : 'Location pending'} 
-                        {v.ipAddress ? ` — ${v.ipAddress}` : ''}
-                      </p>
-                      <p className="text-xs font-light text-[#c8aa96] mb-1.5 truncate max-w-full opacity-90">
-                        Device: {parseUserAgent(v.userAgent)}
-                      </p>
-                      <p className="text-xs font-light text-[#a8998b] opacity-70">
-                        {v.visitDate} • {v.visitTime}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

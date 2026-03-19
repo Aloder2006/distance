@@ -45,11 +45,11 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }).then(r => r.json()),
-  updateMessage: (id, text) =>
+  updateMessage: (id, payload) =>
     fetch(`${BASE}/messages/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(payload),
     }).then(r => r.json()),
   getMessages: () => fetch(`${BASE}/messages`, { headers: getAuthHeaders() }).then(async r => {
     const data = await r.json();
