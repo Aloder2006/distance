@@ -1,0 +1,16 @@
+{
+  "short_name": "Distance",
+  "name": "Distance Between Us",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1A0F0A",
+  "background_color": "#1A0F0A"
+}

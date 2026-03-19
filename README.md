@@ -1,5 +1,9 @@
 # 🌍 Distance Between Us
 
+<p align="center">
+  <img src="frontend/public/icon.png" width="140" style="border-radius: 26px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1)"/>
+</p>
+
 A premium, full-stack web application designed to calculate the precise direct distance between an administrator and visitors in real-time. Featuring an elegant dark wood & liquid glassmorphism UI, interactive live mapping, and powerful advanced device fingerprinting telemetry.
 
 ## ✨ Features
