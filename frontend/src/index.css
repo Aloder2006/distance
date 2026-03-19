@@ -95,7 +95,8 @@ h1, h2, h3, .font-serif {
 
 /* Leaflet styling for dark wood theme */
 .leaflet-tile {
-  filter: sepia(0.6) hue-rotate(340deg) saturate(0.6) brightness(0.6) contrast(1.2);
+  /* Using deeply saturated sepia to give OSM a dark wooden vibe while keeping labels readable */
+  filter: sepia(0.75) hue-rotate(330deg) saturate(1.8) brightness(0.45) contrast(1.4);
 }
 
 .leaflet-container {
