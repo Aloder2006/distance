@@ -236,11 +236,20 @@ export default function AdminPage() {
                     <Stat label="IP Address" value={msg.ipAddress || 'Unavailable'} />
                     <Stat label="Platform" value={msg.deviceInfo?.platform || 'Unknown'} />
                     <Stat label="Browser" value={parseUserAgent(msg.deviceInfo?.userAgent)} />
+                    <Stat label="RAM & CPU" value={`${msg.deviceInfo?.memoryGB}GB / ${msg.deviceInfo?.cpuCores} Cores`} />
+                    <Stat label="GPU Renderer" value={<span className="text-xs break-words leading-tight block">{msg.deviceInfo?.gpu || 'Unknown'}</span>} />
+                    <Stat label="Screen & DPI" value={msg.deviceInfo?.screenResolution || 'Unknown'} />
                     <Stat label="Timezone" value={msg.deviceInfo?.timeZone || 'Unknown'} />
-                    <Stat label="Screen" value={msg.deviceInfo?.screenResolution || 'Unknown'} />
                     <Stat label="Language" value={msg.deviceInfo?.language || 'Unknown'} />
-                    <Stat label="RAM" value={`${msg.deviceInfo?.memoryGB} GB` || 'Unknown'} />
-                    <Stat label="CPU Cores" value={`${msg.deviceInfo?.cpuCores} Cores` || 'Unknown'} />
+                    <Stat label="Network Status" value={msg.deviceInfo?.network || 'Unknown'} />
+                    <Stat label="Touch Points" value={msg.deviceInfo?.touchPoints ?? 'Unknown'} />
+                    <Stat label="Cookies" value={msg.deviceInfo?.cookieEnabled ? 'Enabled' : 'Disabled'} />
+                    <div className="lg:col-span-4 col-span-2">
+                      <Stat 
+                        label="Raw User Agent (Detailed Fingerprint)" 
+                        value={<span className="text-[10px] break-all leading-relaxed text-[#c8aa96] font-mono select-all block mt-1">{msg.deviceInfo?.userAgent || 'Unknown'}</span>} 
+                      />
+                    </div>
                   </div>
                 )}
               </div>

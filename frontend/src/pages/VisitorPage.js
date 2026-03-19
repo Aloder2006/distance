@@ -51,14 +51,36 @@ const PHASE = {
 };
 
 const getDeviceInfo = () => {
+  let gpu = 'Unknown';
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      }
+    }
+  } catch (e) {}
+
+  let network = 'Unknown';
+  if (navigator.connection) {
+    network = `${navigator.connection.effectiveType || ''} ${navigator.connection.downlink ? `(${navigator.connection.downlink}Mbps)` : ''}`;
+  }
+
   return {
     userAgent: navigator.userAgent,
     language: navigator.language,
-    screenResolution: `${window.screen.width}x${window.screen.height}`,
+    screenResolution: `${window.screen.width}x${window.screen.height} (${window.screen.colorDepth}-bit)`,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     cpuCores: navigator.hardwareConcurrency || '??',
     memoryGB: navigator.deviceMemory || '??',
-    platform: navigator.platform
+    platform: navigator.platform,
+    vendor: navigator.vendor || 'Unknown',
+    gpu: gpu,
+    network: network,
+    touchPoints: navigator.maxTouchPoints || 0,
+    cookieEnabled: navigator.cookieEnabled,
   };
 };
 
